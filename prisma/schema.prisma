@@ -1,0 +1,237 @@
+// GradMate AI — Prisma schema
+// PostgreSQL (Supabase) for production.
+
+generator client {
+  provider      = "prisma-client-js"
+  // native = local dev; rhel-openssl-3.0.x = Netlify Functions (Amazon Linux 2023)
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String   @id @default(cuid())
+  email           String   @unique
+  name            String
+  passwordHash    String
+  university      String?
+  faculty         String?
+  department      String?
+  avatarUrl       String?
+  role            String   @default("student") // student | supervisor
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  memberships     Membership[]
+  ownedProjects   Project[]     @relation("OwnedProjects")
+  createdTasks    Task[]        @relation("TaskCreator")
+  assignedTasks   Task[]        @relation("TaskAssignee")
+  comments        TaskComment[]
+  notifications   Notification[]
+  messages        ChatMessage[]
+  conversations   Conversation[]
+  analyses        IdeaAnalysis[]
+  defenseSessions DefenseSession[]
+  files           ProjectFile[]
+  activities      ActivityLog[]
+}
+
+model Project {
+  id                String   @id @default(cuid())
+  name              String
+  description       String
+  category          String?
+  specialization    String?
+  problemStatement  String?
+  objectives        String?
+  targetUsers       String?
+  technologies      String?
+  status            String   @default("planning") // planning | in_progress | review | completed | archived
+  currentPhase      String?
+  startDate         DateTime?
+  endDate           DateTime?
+  durationWeeks     Int?
+  academicYear      String?
+  ownerId           String
+  owner             User     @relation("OwnedProjects", fields: [ownerId], references: [id])
+  supervisorName    String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  members           Membership[]
+  tasks             Task[]
+  timelinePhases    TimelinePhase[]
+  files             ProjectFile[]
+  notifications     Notification[]
+  analyses          IdeaAnalysis[]
+  defenseSessions   DefenseSession[]
+  activities        ActivityLog[]
+  conversations     Conversation[]
+}
+
+model Membership {
+  id          String   @id @default(cuid())
+  userId      String
+  projectId   String
+  role        String   @default("member") // owner | member | supervisor
+  skills      String?  // comma-separated
+  experience  String?  // beginner | intermediate | advanced
+  availability Int     @default(20) // hours/week
+  createdAt   DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, projectId])
+}
+
+model Task {
+  id            String   @id @default(cuid())
+  title         String
+  description   String?
+  projectId     String
+  assigneeId    String?
+  priority      String   @default("medium") // low | medium | high | urgent
+  status        String   @default("todo") // todo | in_progress | completed | overdue
+  startDate     DateTime?
+  dueDate       DateTime?
+  estimatedHours Float?
+  requiredSkills String?
+  dependencies  String?
+  attachments   String?
+  progress      Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  project       Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  assignee      User?    @relation("TaskAssignee", fields: [assigneeId], references: [id])
+  createdBy     User?    @relation("TaskCreator", fields: [createdById], references: [id])
+  createdById   String?
+  comments      TaskComment[]
+}
+
+model TaskComment {
+  id        String   @id @default(cuid())
+  taskId    String
+  userId    String
+  content   String
+  createdAt DateTime @default(now())
+
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model TimelinePhase {
+  id          String   @id @default(cuid())
+  projectId   String
+  title       String
+  description String?
+  startDate   DateTime
+  endDate     DateTime
+  progress    Int      @default(0)
+  isMilestone Boolean  @default(false)
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model ProjectFile {
+  id          String   @id @default(cuid())
+  projectId   String
+  uploaderId  String
+  name        String
+  type        String   @default("document") // document | report | code | image | other
+  size        Int      @default(0)
+  url         String
+  description String?
+  createdAt   DateTime @default(now())
+
+  project  Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  uploader User    @relation(fields: [uploaderId], references: [id], onDelete: Cascade)
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  projectId String?
+  type      String   @default("info") // info | task | deadline | ai | team
+  title     String
+  body      String?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project Project? @relation(fields: [projectId], references: [id])
+}
+
+model ActivityLog {
+  id        String   @id @default(cuid())
+  projectId String
+  userId    String?
+  action    String
+  details   String?
+  createdAt DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user    User?   @relation(fields: [userId], references: [id])
+}
+
+model IdeaAnalysis {
+  id           String   @id @default(cuid())
+  projectId    String?
+  userId       String
+  ideaTitle    String
+  ideaDescription String
+  feasibility  Int?
+  innovation   Int?
+  complexity   String?
+  resultJson   String
+  createdAt    DateTime @default(now())
+
+  project Project? @relation(fields: [projectId], references: [id])
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Conversation {
+  id         String   @id @default(cuid())
+  userId     String
+  projectId  String?
+  title      String   @default("محادثة جديدة")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project  Project?  @relation(fields: [projectId], references: [id])
+  messages ChatMessage[]
+}
+
+model ChatMessage {
+  id             String   @id @default(cuid())
+  conversationId String
+  userId         String?
+  role           String   // user | assistant
+  content        String
+  createdAt      DateTime @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user         User?        @relation(fields: [userId], references: [id])
+}
+
+model DefenseSession {
+  id           String   @id @default(cuid())
+  projectId    String
+  userId       String
+  mode         String   @default("mixed") // technical | academic | mixed
+  duration     Int      @default(30)
+  transcriptJson String
+  score        Int?
+  feedback     String?
+  createdAt    DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}

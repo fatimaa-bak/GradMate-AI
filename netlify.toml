@@ -1,0 +1,13 @@
+[build]
+  command = "bun run build:netlify"
+  publish = ".next"
+
+[build.environment]
+  NODE_VERSION = "22"
+  # Placeholder values so `next build` passes even before real secrets are set in
+  # the Netlify UI. UI environment variables override these.
+  DATABASE_URL = "postgresql://placeholder:placeholder@localhost:5432/placeholder"
+  NEXTAUTH_SECRET = "placeholder-until-set-in-ui"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
