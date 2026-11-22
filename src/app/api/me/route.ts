@@ -14,7 +14,7 @@ export async function GET() {
         include: {
           project: {
             include: {
-              members: { include: { user: true } },
+              members: { include: { user: { omit: { passwordHash: true } } } },
               tasks: true,
               _count: { select: { tasks: true, members: true } },
             },

@@ -24,9 +24,9 @@ export async function GET(req: Request) {
       project: { members: { some: { userId: user.id } } },
     },
     include: {
-      assignee: true,
+      assignee: { omit: { passwordHash: true } },
       project: true,
-      comments: { include: { user: true }, orderBy: { createdAt: "asc" } },
+      comments: { include: { user: { omit: { passwordHash: true } } }, orderBy: { createdAt: "asc" } },
     },
     orderBy: { createdAt: "desc" },
   });

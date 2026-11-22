@@ -22,7 +22,7 @@ export async function GET(req: Request) {
   const members = await db.membership.findMany({
     where: projectId ? { projectId } : { userId: user.id },
     include: {
-      user: true,
+      user: { omit: { passwordHash: true } },
       project: true,
     },
   });
