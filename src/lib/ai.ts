@@ -17,10 +17,18 @@ export async function callAI(
     console.error("[ai] Gemini failed — falling back to z-ai-web-dev-sdk");
   }
 
-  // 2) z-ai-web-dev-sdk — works inside the Z.ai sandbox without any key
+  // 2) z-ai-web-dev-sdk — works inside the Z.ai sandbox without any key.
+  // Outside the sandbox (e.g. Netlify) ZAI.create() can hang without ever
+  // rejecting, which freezes the request until the platform kills it (502).
+  // Guard it with a hard timeout so we fall through to the demo fallback.
   try {
-    const { default: ZAI } = await import("z-ai-web-dev-sdk");
-    const zai = await ZAI.create();
+    const sdkFresh = await Promise.race([
+      import("z-ai-web-dev-sdk").then((m) => m.default),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("z-ai sdk init timeout (outside sandbox?)")), 10_000)
+      ),
+    ]);
+    const zai = await sdkFresh.create();
     const resp = await zai.chat.completions.create({
       messages: [
         { role: "system", content: systemPrompt },
