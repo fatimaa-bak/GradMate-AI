@@ -3,8 +3,10 @@
 
 generator client {
   provider      = "prisma-client-js"
-  // native = local dev; rhel-openssl-3.0.x = Netlify Functions (Amazon Linux 2023)
-  binaryTargets = ["native", "rhel-openssl-3.0.x"]
+  // native = local dev; rhel-openssl-1.1.x = Netlify Functions (Amazon Linux 2);
+  // rhel-openssl-3.0.x = Netlify Functions (Amazon Linux 2023). Cover both runtimes
+  // so the query engine binary loads regardless of the Functions platform.
+  binaryTargets = ["native", "rhel-openssl-1.1.x", "rhel-openssl-3.0.x"]
 }
 
 datasource db {
