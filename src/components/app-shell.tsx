@@ -36,7 +36,7 @@ export type ViewKey =
   | "dashboard" | "myProjects" | "createProject" | "projectOverview"
   | "ideaAnalyzer" | "teamManagement" | "smartTasks" | "projectTimeline"
   | "aiAssistant" | "progressTracking" | "files" | "defenseSimulator"
-  | "notifications" | "settings";
+  | "agentPipeline" | "notifications" | "settings";
 
 export interface ProjectSummary {
   id: string;
@@ -83,6 +83,7 @@ export function AppShell({ view, setView, activeProjectId, setActiveProjectId, o
     { key: "myProjects", label: t.sidebar.myProjects, icon: FolderKanban },
   ];
   const navTools: { key: ViewKey; label: string; icon: any }[] = [
+    { key: "agentPipeline", label: t.sidebar.agentPipeline, icon: Bot },
     { key: "ideaAnalyzer", label: t.sidebar.ideaAnalyzer, icon: Lightbulb },
     { key: "teamManagement", label: t.sidebar.teamManagement, icon: Users },
     { key: "smartTasks", label: t.sidebar.smartTasks, icon: ListChecks },
@@ -310,6 +311,7 @@ function getTitleForView(view: ViewKey, t: any): string {
     progressTracking: t.progress.title,
     files: t.files.title,
     defenseSimulator: t.defense.title,
+    agentPipeline: t.agentPipeline.title,
     notifications: t.notifications.title,
     settings: t.settings.title,
   };

@@ -16,6 +16,7 @@ import { TeamManagementView } from "@/components/views/team-management";
 import { SmartTasksView } from "@/components/views/smart-tasks";
 import { ProjectTimelineView } from "@/components/views/project-timeline";
 import { AiAssistantView } from "@/components/views/ai-assistant";
+import { AgentPipelineView } from "@/components/views/agent-pipeline";
 import { ProgressTrackingView } from "@/components/views/progress-tracking";
 import { FilesView } from "@/components/views/files";
 import { DefenseSimulatorView } from "@/components/views/defense-simulator";
@@ -105,6 +106,9 @@ export default function Home() {
       )}
       {view === "aiAssistant" && (
         <AiAssistantView activeProjectId={activeProjectId} />
+      )}
+      {view === "agentPipeline" && (
+        <AgentPipelineView activeProjectId={activeProjectId} setView={setView} />
       )}
       {view === "progressTracking" && (
         <ProgressTrackingView activeProjectId={activeProjectId} />
