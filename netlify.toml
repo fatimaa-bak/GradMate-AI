@@ -4,10 +4,10 @@
 
 [build.environment]
   NODE_VERSION = "22"
-  # Placeholder values so `next build` passes even before real secrets are set in
-  # the Netlify UI. UI environment variables override these.
-  DATABASE_URL = "postgresql://placeholder:placeholder@localhost:5432/placeholder"
-  NEXTAUTH_SECRET = "placeholder-until-set-in-ui"
+  # Secrets (DATABASE_URL, NEXTAUTH_SECRET, NEXTAUTH_URL, GEMINI_API_KEY) are set
+  # in the Netlify UI under Site configuration → Environment variables, never in
+  # this file — putting any value for a known-secret key in a repo file fails
+  # Netlify's secrets scanning (exit code 2).
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
