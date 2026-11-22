@@ -67,6 +67,45 @@ export async function callAIJson<T = any>(
   }
 }
 
+// Pick a Gemini model that actually exists for THIS key. Google has renamed /
+// deprecated models several times (e.g. gemini-2.5-flash is now restricted to
+// existing users, and "gemini-4-hydrogen" never existed). Rather than hardcode
+// a name that may 404, list the models the key can use and prefer a fast/cheap
+// flash variant. Cached for the lifetime of the function instance.
+let chosenGeminiModel: string | undefined;
+async function pickGeminiModel(apiKey: string): Promise<string> {
+  if (chosenGeminiModel) return chosenGeminiModel;
+  try {
+    const res = await fetch("https://generativelanguage.googleapis.com/v1beta/models", {
+      headers: { "x-goog-api-key": apiKey },
+      signal: AbortSignal.timeout(8_000),
+    });
+    if (res.ok) {
+      const data: any = await res.json();
+      const ids: string[] = (data.models || [])
+        .filter((m: any) => Array.isArray(m.supportedGenerationMethods) && m.supportedGenerationMethods.includes("generateContent"))
+        .map((m: any) => String(m.name).replace(/^models\//, ""));
+      for (const pref of ["flash-lite", "flash", "pro"]) {
+        const hit = ids.find((id) => id.includes(pref));
+        if (hit) {
+          chosenGeminiModel = hit;
+          console.log(`[ai] picked Gemini model from ListModels: ${hit}`);
+          return hit;
+        }
+      }
+      if (ids[0]) {
+        chosenGeminiModel = ids[0];
+        return ids[0];
+      }
+    } else {
+      console.error(`[ai] ListModels HTTP ${res.status}:`, (await res.text()).slice(0, 200));
+    }
+  } catch (e) {
+    console.error("[ai] ListModels failed:", e);
+  }
+  return GEMINI_DEFAULT_MODEL;
+}
+
 // Google Gemini REST call (generateContent). Returns null on any failure so
 // callers can fall back to the next provider.
 async function callGemini(
@@ -76,7 +115,7 @@ async function callGemini(
 ): Promise<string | null> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) return null;
-  const model = process.env.GEMINI_MODEL || GEMINI_DEFAULT_MODEL;
+  const model = process.env.GEMINI_MODEL || (await pickGeminiModel(apiKey));
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
 
   const headers = {
